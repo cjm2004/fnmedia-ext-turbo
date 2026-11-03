@@ -1,0 +1,7 @@
+*.fpk
+*.sha256
+__pycache__/
+*.pyc
+.venv/
+state/
+.DS_Store
