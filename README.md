@@ -1,5 +1,7 @@
 # fnmedia-ext Turbo
 
+**English: [README.en.md](README.en.md)**
+
 > **飞牛影视在线扩展 · 优化版**（FNmedia-ext **Turbo**）
 > 基于原版 [**yujian0815/fnmedia-ext**](https://github.com/yujian0815/fnmedia-ext) **v0.2.39**（完整构建）修改，保留原版全部功能，只优化播放链路。
 
