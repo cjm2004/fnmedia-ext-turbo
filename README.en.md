@@ -71,6 +71,8 @@ Same NAS, same title, same source host, before vs after:
 | Throughput of the chosen line | 55 ~ 70 KB/s (old logic picked it) | **592 KB/s** (new logic picks it) | 8–10× |
 | DNS for source domains | cold lookup 5.0 ~ 5.2 s | cache hit **0.04 ~ 0.12 s** | 50× faster |
 | Watchdog staging-socket wait | hard-coded 16 s | configurable **180 s** | fixes "starts then stops" |
+| First open of a chart title (detail) | skeleton: size 0 / path 加载中 | real info, wait 0.12s → 2.5s | usable |
+| First play of a chart title | 5.8~9.3 s, often times out | **0.02~0.03 s** (list prewarm) | instant |
 
 ![startup](assets/bench-startup.png)
 ![ttfb](assets/bench-ttfb.png)
@@ -115,6 +117,30 @@ The staging-socket wait was hard-coded to 80×0.2 s = 16 s, while startup must l
 the App Center showed "starts then stops". Now configurable via `FNMEDIA_STAGE_WAIT` (default 180 s).
 Also added `ExecStartPre` to the systemd unit to wait for the venv interpreter (203/EXEC at boot when the
 data volume is not mounted yet).
+
+### 7. Instant first click: faster chart/hot title resolution (4 changes)
+
+Chart and hot-library cards use virtual guids; the aggregated source search only starts when you open one.
+To keep the poster wall responsive, upstream waits just **0.12 s** in the detail endpoint and returns a
+skeleton ("no info, size 0, path = 加载中.m3u8"), while the play path waits on the same background task
+**without any timeout** — so the first play spins forever, and it only works after the search finishes.
+
+| Change | Detail |
+|---|---|
+| Two-phase resolution | search only fast CMS sources first (6 s budget), fall back to the full search (25 s) |
+| Detail wait 0.12 s → 2.5 s | first click shows real duration/overview/episodes (`FNMEDIA_CHART_DETAIL_WAIT`) |
+| Play wait capped at 12 s | no more endless spinner, a clear error instead (`FNMEDIA_CHART_PLAY_WAIT`) |
+| **Prewarm on list** | background-resolve the first 6 unbound cards (single-flight, max 2 concurrent) |
+
+Measured (open chart library → wait 8 s → click 3 titles):
+
+| Title | Detail | Playback preset |
+|---|---|---|
+| 黑球 | 4.31 s (already real data) | **0.03 s** |
+| 祝我生日快乐 | **0.02 s** | **0.02 s** |
+| 害群之马 | 0.02 s | 0.03 s |
+
+Before: skeleton detail (size 0, 加载中.m3u8) and preset taking **5.8 / 7.8 / 9.3 s**, often timing out.
 
 ## 🚀 Install
 
