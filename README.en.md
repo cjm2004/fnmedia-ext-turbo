@@ -1,176 +1,99 @@
 # fnmedia-ext Turbo
 
-> **Optimized build of the fnOS Video online extension** (飞牛影视在线扩展).
-> Based on upstream [**yujian0815/fnmedia-ext**](https://github.com/yujian0815/fnmedia-ext) **v0.2.39** (full build).
-> All upstream features are kept — only the playback path is optimized.
+**中文: [README.md](README.md)**
 
-[![base](https://img.shields.io/badge/based%20on-fnmedia--ext%20v0.2.39-blue)](#-which-upstream-version-is-this-based-on)
+> **Optimized build of the fnOS media extension** — based on upstream
+> [**yujian0815/fnmedia-ext**](https://github.com/yujian0815/fnmedia-ext) **v0.2.68** (full build),
+> keeping all upstream features and only tuning the playback path.
+
+[![base](https://img.shields.io/badge/based%20on-fnmedia--ext%20v0.2.68-blue)](#which-upstream-version-is-this-based-on)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![platform](https://img.shields.io/badge/fnOS-%E2%89%A51.2.0-lightgrey)](#-install)
 
-**中文文档: [README.md](README.md)**
+## Thanks first
 
----
+99% of the work belongs to **yujian0815** and the upstream project
+[fnmedia-ext](https://github.com/yujian0815/fnmedia-ext) (MIT). This repo only tweaks a few
+places in the playback path that slow down start-up, and measures the result.
 
-## 🙏 Credits first
-
-99% of this project belongs to the original author **[yujian0815](https://github.com/yujian0815)** and the
-[**fnmedia-ext**](https://github.com/yujian0815/fnmedia-ext) project.
-
-The original work solves the hard part: it takes over the official fnOS Video entry point via an atomic
-Unix-socket rename — **fully reversible, without patching official binaries, nginx or the database** — and adds
-native search aggregation, four Douban chart libraries, four huge category libraries, m3u8/mp4 proxy playback,
-multi-line switching, playback history and in-app admin page.
-
-This repository only fixes a few spots on the playback path that make start-up slow, and quantifies the
-difference. **Please star the original repository first** — it deserves it.
-
-- Upstream: <https://github.com/yujian0815/fnmedia-ext>
-- License: MIT © 2026 yujian0815 (this repo is also MIT, original notice retained — see [LICENSE](LICENSE))
-
-## 📌 Which upstream version is this based on
+## Which upstream version is this based on
 
 | Item | Value |
 |---|---|
-| **Upstream base** | **v0.2.39** (full build) |
-| This release | **v1.0.0** |
-| fnOS Video (trim.media) | 0.9.8-1 (tested) |
+| Upstream base | **v0.2.68** (latest, full build) |
+| This release | **v2.0.0** |
+| trim.media | 0.9.8-1 (tested) |
 | fnOS | ≥ 1.2.0 (tested on 1.2.0800) |
-| Arch | all (pure Python, venv created on install) |
 
-### 🔍 Verifiable
+### Why v2.0.0 instead of v1.0.0
 
-| Check | Result |
-|---|---|
-| Upstream tag | v0.2.39 (commit d782c58), released 2026-10-31T07:34:43Z |
-| Local repo/VERSION | 0.2.39 |
-| File-by-file diff vs upstream v0.2.39 source | **46 / 56 files byte-identical** |
-| The 10 differing files | this repo's patches (proxy/app.py, proxy/supervise.py), the earlier fix patch (proxy/store.py, proxy/providers.py), and full-build vs public-source differences (features.py, admin_ui.py, tvbox.py, config.py, requirements.txt, CHANGELOG.md) |
+v1.0.0 was based on v0.2.39. Upstream later rewrote the line-selection stack in v0.2.68
+(new per-title `linepredict` prediction, **global `speedbench` ranking removed**, racing changed to
+"wait for every candidate", first `main` waits for the real playlist). v2.0.0 re-applies **all**
+optimizations of this repo on top of v0.2.68 instead of simply stacking them:
 
-> If the App Center shows 0.2.33, that is the version of the **originally installed FPK**. The app ships a
-> built-in updater that replaces the code under repo/ but does not rewrite the App Center manifest, so the
-> number stays behind. Always check repo/VERSION for the real version.
-
-> Upstream also publishes full (116.9 MB, with non-public modules) and standard (0.8 MB) packages; the test
-> machine runs the full one, hence wasmtime in requirements.txt and DDUO/CATVOD = True in features.py —
-> which is exactly why this Release only ships the **public build** (stripped).
-
-> Note: upstream is now at v0.2.67. We checked it — **supervise.py still hard-codes the 16 s wait window and
-> hls_seg still buffers the whole segment** before responding, so the problems this repo fixes still exist
-> in the latest version; the optimizations here were developed and validated on v0.2.39.
-
-## 📊 Results
-
-Same NAS, same title, same source host, before vs after:
-
-| Metric | Upstream v0.2.39 | Turbo v1.0.0 | Change |
-|---|---|---|---|
-| Time to start playback (13-line title) | **11.67 s** | **2.93 s** (first) / **2.34 s** (replay) | **-75%** |
-| Segment time-to-first-byte | 1.5 ~ 55 s (= full segment download) | **0.09 ~ 0.70 s** | 10–50× faster |
-| Line selection basis | first-byte latency only | latency + **measured throughput** | avoids 60 KB/s lines |
-| Throughput of the chosen line | 55 ~ 70 KB/s (old logic picked it) | **592 KB/s** (new logic picks it) | 8–10× |
-| DNS for source domains | cold lookup 5.0 ~ 5.2 s | cache hit **0.04 ~ 0.12 s** | 50× faster |
-| Watchdog staging-socket wait | hard-coded 16 s | configurable **180 s** | fixes "starts then stops" |
-| First open of a chart title (detail) | skeleton: size 0 / path 加载中 | real info, wait 0.12s → 2.5s | usable |
-| First play of a chart title | 5.8~9.3 s, often times out | **0.02~0.03 s** (list prewarm) | instant |
-
-![startup](assets/bench-startup.png)
-![ttfb](assets/bench-ttfb.png)
-![line speed](assets/bench-line-speed.png)
-![dns](assets/bench-dns.png)
-
-> Method, environment and raw samples: [docs/BENCHMARK.md](docs/BENCHMARK.md). All numbers are measured on
-> real hardware, not estimates. Absolute values vary with network and source-site conditions; the relative
-> improvement is stable.
-
-## 🔧 What changed (6 items)
-
-### 1. Streaming segment relay (biggest win)
-Upstream `hls_seg` does `body = r.content` — it downloads the **whole segment** before replying, so the
-player's time-to-first-byte equals the full download time. Now bytes are relayed as they arrive; it falls
-back to full buffering in three cases (upstream 4xx/5xx, PNG-wrapped segments, content-encoding), i.e. the
-old behaviour is preserved for those.
-
-### 2. "First success wins" line race
-Upstream uses `asyncio.gather` and therefore waits for **every** candidate (or all timeouts). For a 13-line
-title that meant 11.67 s to start, of which only 0.8 s was the actual winner — the rest was waiting for
-candidates that were never going to win. Now: `FIRST_COMPLETED` + cancel the rest.
-
-### 3. Single-probe fast path for known-good lines
-Lines whose measured throughput is already known (≥ 200 KB/s) skip the parallel race entirely (racing six
-lines on a slow link just makes them fight for bandwidth).
-
-### 4. Throughput-aware line selection
-The old race compared first-byte latency only, so it kept picking lines that answer fast but **transfer
-slowly** (measured: 55~70 KB/s vs 592 KB/s on the same title, indistinguishable by latency). The proxy now
-records each line's real download speed while playing (EMA, **zero extra traffic**) and ranks candidates by
-it; unknown lines get a 150 KB/s prior so one bad measurement does not blacklist a line forever.
-
-### 5. In-process DNS cache
-Source domains use multi-level CNAMEs and glibc does not cache; 3 of 18 domains took 5.0~5.2 s on a cold
-lookup. Added a 600 s / 2048-entry cache around `socket.getaddrinfo` — **process-local only**, system
-`/etc/resolv.conf` untouched.
-
-### 6. Watchdog wait window + boot hardening
-The staging-socket wait was hard-coded to 80×0.2 s = 16 s, while startup must load `state/titles.json`
-(22.8 s for a 3000+ title library, 16 s of it building the episode index) — so it **always** timed out and
-the App Center showed "starts then stops". Now configurable via `FNMEDIA_STAGE_WAIT` (default 180 s).
-Also added `ExecStartPre` to the systemd unit to wait for the venv interpreter (203/EXEC at boot when the
-data volume is not mounted yet).
-
-### 7. Instant first click: faster chart/hot title resolution (4 changes)
-
-Chart and hot-library cards use virtual guids; the aggregated source search only starts when you open one.
-To keep the poster wall responsive, upstream waits just **0.12 s** in the detail endpoint and returns a
-skeleton ("no info, size 0, path = 加载中.m3u8"), while the play path waits on the same background task
-**without any timeout** — so the first play spins forever, and it only works after the search finishes.
-
-| Change | Detail |
-|---|---|
-| Two-phase resolution | search only fast CMS sources first (6 s budget), fall back to the full search (25 s) |
-| Detail wait 0.12 s → 2.5 s | first click shows real duration/overview/episodes (`FNMEDIA_CHART_DETAIL_WAIT`) |
-| Play wait capped at 12 s | no more endless spinner, a clear error instead (`FNMEDIA_CHART_PLAY_WAIT`) |
-| **Prewarm on list** | background-resolve the first 6 unbound cards (single-flight, max 2 concurrent) |
-
-Measured (open chart library → wait 8 s → click 3 titles):
-
-| Title | Detail | Playback preset |
+| Area | v1.0.0 (0.2.39) | v2.0.0 (0.2.68) |
 |---|---|---|
-| 黑球 | 4.31 s (already real data) | **0.03 s** |
-| 祝我生日快乐 | **0.02 s** | **0.02 s** |
-| 害群之马 | 0.02 s | 0.03 s |
+| Cold-start line pick | global source speed ranking | **follow upstream**: per-title `linepredict` |
+| In-play correction | measured throughput (EMA) | kept, complementary to linepredict |
+| Race policy | first success wins + budget | kept as default, **switchable back to upstream "wait all"** |
+| Posters | direct fetch each time | **disk cache + background warm-up** |
+| First `main` wait | 2.4 s then placeholder | 4 s then placeholder (`main_cms_budget`, configurable) |
 
-Before: skeleton detail (size 0, 加载中.m3u8) and preset taking **5.8 / 7.8 / 9.3 s**, often timing out.
+## Measured results (same NAS, same title, same moment)
 
-## 🚀 Install
+| Metric | Upstream v0.2.68 | Turbo v1.0.0 | **Turbo v2.0.0** |
+|---|---|---|---|
+| Multi-line menu (preset) | 0.07 s | 0.01 s | **0.01 – 0.07 s** |
+| Playlist build (`main`, healthy line) | 2.1 s | 1.1 – 2.4 s | **0.17 – 1.9 s** (0.01 s when prewarmed) |
+| Worst case `main` (bad source) | **8.0 s** | 2.4 s | **4.0 s** (configurable) |
+| **First segment TTFB** | **1.9 – 2.8 s (= whole segment)** | 0.18 – 0.62 s | **0.33 – 0.85 s** |
+| **Seek TTFB (6th segment)** | **3.9 – 4.7 s** | 0.20 – 0.37 s | **0.21 – 0.65 s** |
 
-App Center → **Manual install** → pick `fnmedia-ext-turbo-1.0.0-public.fpk` → accept the disclaimer.
+Compared with upstream v0.2.68: first byte 3–5× faster, seeking 5–10× faster (upstream still buffers
+the whole segment; this build streams it), worst-case wait 4 s instead of 8 s.
+Compared with v1.0.0: roughly on par — faster when playlists are prewarmed, slightly later
+placeholder on bad sources (tunable via `main_cms_budget=2.4`).
 
-- Internet access is required during install (`pip install fastapi uvicorn httpx` to build the venv).
-- The app id is the same as upstream (`fnmedia-ext`), so on a machine that already has it this is treated as
-an **upgrade**; `state/` (title cache, playback history, source config) is backed up and restored.
-- A full uninstall/reinstall recreates the directory — back up
-  `/vol1/@appcenter/fnmedia-ext/repo/state/` before doing that.
+## What is changed (9 items)
 
-## ⚠️ Notes & disclaimer
+1. **Streaming segment relay** — upstream buffers the whole segment before replying; this build
+   streams from the first upstream byte (falls back to buffering for 4xx/5xx, PNG-wrapped
+   segments and `content-encoding` responses).
+2. **Race: first success wins + shared 2 s budget** — cancels the rest as soon as one line is
+   probed OK; `line_fastest_firstwin=false` restores the upstream "wait for all" policy.
+3. **Known-good line single-shot** — lines with measured throughput ≥ 200 KB/s are probed alone.
+4. **Measured-throughput ordering (EMA)** — real download speed is recorded while streaming
+   (zero extra traffic) and used as a secondary sort key next to upstream `linepredict`.
+5. **Poster disk cache + warm-up** — 7-day TTL, first pass 20 s after start, then every 30 min.
+6. **`main_cms_budget`** (default 4 s) — bound the first `main` wait for normal CMS lines.
+7. **In-process DNS cache** — `socket.getaddrinfo` with 600 s TTL / 2048 entries.
+8. **Takeover wait + systemd hardening** — `FNMEDIA_STAGE_WAIT` (default 180 s) and
+   `ExecStartPre` waiting for the venv.
+9. **Chart/hot card acceleration** — two-phase resolve, detail wait 0.12 s → 2.5 s, play wait cap
+   12 s, background pre-resolve of the first 6 unbound cards.
 
-- Like upstream, this repository **does not provide, bundle or distribute any media, source-site addresses or
-  playback links**. All online content comes from third-party endpoints the user configures, and users are
-  responsible for verifying legality.
-- This is a **community modification, not an official release by the original author**. Report upstream bugs to
-  the [original repo](https://github.com/yujian0815/fnmedia-ext); only the six optimizations above are in scope here.
-- Upstream ships a public build and a full build; this repo's release is the **public build** (non-public
-  modules stripped by upstream's own `public_strip.py`).
-- MIT License, original copyright notice retained.
+## Install
 
-## 📁 Layout
+App Center → **Manual install** → pick `fnmedia-ext-turbo-2.0.0-public.fpk` → accept the disclaimer.
 
-```
-assets/                   benchmark charts
-docs/BENCHMARK.md         method, environment, raw data
-RELEASE_NOTES_v1.0.0.md   release notes (incl. upstream base version)
-```
+- Requires network during install (creates a venv).
+- Same app id as upstream (`fnmedia-ext`), so installing over it is treated as an upgrade and
+  `state/` is backed up and restored.
+- Back up `/vol1/@appcenter/fnmedia-ext/repo/state/` before uninstalling.
 
----
+## Troubleshooting knobs (App → Playback lines)
 
-**Thanks again to [yujian0815](https://github.com/yujian0815) and the fnmedia-ext project.**
+| Key | Default | Meaning |
+|---|---|---|
+| `line_fastest_firstwin` | `true` | first success wins; set `false` for upstream behavior |
+| `line_fastest_budget` | `2.0` | total race budget (seconds) |
+| `main_cms_budget` | `4.0` | first `main` wait bound (2–6 s) |
+| `linepredict_enabled` | `true` | per-title poster-time prediction (upstream 0.2.68) |
+
+## Disclaimer
+
+- This repository does **not** ship, bundle or distribute any media content, source-list or play link.
+- Community build — **not** published by the upstream author. Upstream issues go to the
+  [upstream repo](https://github.com/yujian0815/fnmedia-ext).
+- Releases here are the **public build** (upstream private/proprietary modules stripped).
+- MIT License, upstream copyright retained.
