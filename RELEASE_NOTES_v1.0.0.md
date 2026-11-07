@@ -1,3 +1,11 @@
+> ## ⚠️ 此版本的安装包存在已知问题，请改用 [v1.0.1](https://github.com/cjm2004/fnmedia-ext-turbo/releases/tag/v1.0.1)
+>
+> 下方 v1.0.0 的 `fnmedia-ext-1.0.0-public.fpk` 是「公开构建」，`features.py` 中
+> `DDUO/CATVOD/DRPY/GUARD` 均为 `False` 且相关模块被剥离，会出现**未接管 / 接口不可用 /
+> 加载不出源**。v1.0.1 已改为基于官方 full 构建打包并修复该问题。
+>
+> 下面的**优化内容与实测数据本身仍然有效**，问题只出在打包形态。
+
 # fnmedia-ext Turbo v1.0.0
 
 **基于原版 [yujian0815/fnmedia-ext](https://github.com/yujian0815/fnmedia-ext) 的 v0.2.39（完整构建）修改。**
