@@ -1,5 +1,19 @@
 # fnmedia-ext Turbo
 
+> ## ⚠️ 重要更新：请使用 v1.0.1（已修复「加载不出源」）
+>
+> **v1.0.0 的安装包是「公开构建」**（`features.py` 中 DDUO/CATVOD/DRPY/GUARD 全为 `False`，
+> 相应模块在打包时被剥离），会导致**部分在线资源站解析通道缺失**，表现为
+> 「未接管 / 接口不可用 / 加载不出源」。
+>
+> **v1.0.1 已改为基于官方 full 构建 v0.2.39 重新打包，保留全部特性开关**，并把所有优化
+> 烘焙进源码（装完即用，无需再跑补丁脚本）。
+>
+> 👉 下载：[Releases · v1.0.1](https://github.com/cjm2004/fnmedia-ext-turbo/releases/tag/v1.0.1)
+>
+> v1.0.0 的资产仍保留供对照，但**不建议继续使用**。
+
+
 **English: [README.en.md](README.en.md)**
 
 > **飞牛影视在线扩展 · 优化版**（FNmedia-ext **Turbo**）
