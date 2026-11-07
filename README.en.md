@@ -1,5 +1,17 @@
 # fnmedia-ext Turbo
 
+> ## ⚠️ Important: use v1.0.1 (fixes "sources not loading")
+>
+> The **v1.0.0 package was a "public" build**: in `features.py`, `DDUO`/`CATVOD`/`DRPY`/`GUARD`
+> are all `False` and the corresponding modules were stripped at packaging time. That removes
+> some online source parsers, resulting in **no takeover / API unavailable / sources not loading**.
+>
+> **v1.0.1 is rebuilt from the official full v0.2.39 build** with every feature flag kept, and
+> all optimizations baked into the source (no post-install patch script needed).
+>
+> 👉 Download: [Releases · v1.0.1](https://github.com/cjm2004/fnmedia-ext-turbo/releases/tag/v1.0.1)
+
+
 > **Optimized build of the fnOS Video online extension** (飞牛影视在线扩展).
 > Based on upstream [**yujian0815/fnmedia-ext**](https://github.com/yujian0815/fnmedia-ext) **v0.2.39** (full build).
 > All upstream features are kept — only the playback path is optimized.
